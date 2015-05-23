@@ -64,7 +64,7 @@ class LogStash::Outputs::SQS < LogStash::Outputs::Base
 
   config_name "sqs"
 
-  # Name of SQS queue to push messages into. Note that this is just the name of the queue, not the URL or ARN.
+  # Name of SQS queue to push messages into. This may be either the queue name within the same account or the queue URL for cross-account support.
   config :queue, :validate => :string, :required => true
 
   # Set to true if you want send messages to SQS in batches with `batch_send`
@@ -109,7 +109,8 @@ class LogStash::Outputs::SQS < LogStash::Outputs::Base
 
     begin
       @logger.debug("Connecting to AWS SQS queue '#{@queue}'...")
-      @sqs_queue = @sqs.queues.named(@queue)
+      sqs_url = @queue =~ /^http.:/ ? @queue : @sqs.queues.url_for(@queue)
+      @sqs_queue = @sqs.queues[sqs_url]
       @logger.info("Connected to AWS SQS queue '#{@queue}' successfully.")
     rescue Exception => e
       @logger.error("Unable to access SQS queue '#{@queue}': #{e.to_s}")
