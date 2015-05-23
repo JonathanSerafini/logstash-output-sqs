@@ -125,7 +125,7 @@ class LogStash::Outputs::SQS < LogStash::Outputs::Base
     end
     begin 
       @sqs_queue.send_message(event.to_json)
-    rescue AWS::Errors::ChecksumError => e,
+    rescue AWS::Errors::ChecksumError => e
       event["sqs_retry"] ||= 0
       if event["sqs_retry"] < 5
         event["sqs_retry"] += 1
