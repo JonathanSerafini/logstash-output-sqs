@@ -123,7 +123,18 @@ class LogStash::Outputs::SQS < LogStash::Outputs::Base
       buffer_receive(event.to_json)
       return
     end
-    @sqs_queue.send_message(event.to_json)
+    begin 
+      @sqs_queue.send_message(event.to_json)
+    rescue AWS::Errors::ChecksumError => e,
+      event["sqs_retry"] ||= 0
+      if event["sqs_retry"] < 5
+        event["sqs_retry"] += 1
+        @logger.info("Checksum validation failed, re-buffering message.")
+        receive(event)
+      else
+        @logger.error("Check validation and retry failed, dropping message.")
+      end
+    end
   end # def receive
 
   # called from Stud::Buffer#buffer_flush when there are events to flush
